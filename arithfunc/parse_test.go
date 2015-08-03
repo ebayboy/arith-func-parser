@@ -8,6 +8,10 @@ import (
 func TestParse(t *testing.T) {
 	inputs := []float64{1, -0.5}
 
+	testParseHelper(t, 5, "5")
+	testParseHelper(t, 36, "36")
+	testParseHelper(t, 1.5, "1.5")
+	testParseHelper(t, -0.5, "V0", -0.5)
 	testParseHelper(t, 0.5, "V0 / V0 + V1", inputs...)
 	testParseHelper(t, 2, "V0 / (V0 + V1)", inputs...)
 	testParseHelper(t, -1, "v0 - v0 - v0", inputs...)
@@ -21,6 +25,7 @@ func TestParse(t *testing.T) {
 	testParseHelper(t, -12, "1 + 2 / 4 * 5 + 1 / 2 - (7 / 2 * 2 + 9)")
 	testParseHelper(t, 10, "5 - (-5 - -5) + V0", 5)
 	testParseHelper(t, 10, "5--5")
+	testParseHelper(t, 0, "-5--5")
 	testParseHelper(t, math.Inf(0), "1 / 0")
 	testParseHelper(t, math.Inf(-1), "(0 - 1) / 0")
 }
@@ -54,11 +59,16 @@ func TestParseErrors(t *testing.T) {
 	testParseErrorsHelper(t, "5 - *V0")
 	testParseErrorsHelper(t, "5 - *3")
 	testParseErrorsHelper(t, "5*")
+	testParseErrorsHelper(t, "/4")
+	testParseErrorsHelper(t, "")
+	testParseErrorsHelper(t, " ")
+	testParseErrorsHelper(t, "abc")
 }
 
 func testParseErrorsHelper(t *testing.T, fStr string) {
 	_, err := Parse(fStr)
 	if err == nil {
+		t.Logf("Failed to return error parsing: %s", fStr)
 		t.Fail()
 	}
 

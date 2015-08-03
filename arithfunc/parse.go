@@ -42,6 +42,9 @@ func Parse(s string) (result func(vl ...float64) (float64, error), err error) {
 	}()
 
 	root := createNode(s)
+	if root == nil {
+		return nil, errors.New("Input function string is empty.")
+	}
 
 	return func(vl ...float64) (value float64, err error) {
 		//Set up recovery handling on recursive function call
