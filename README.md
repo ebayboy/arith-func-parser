@@ -25,21 +25,21 @@ This package is "go-gettable":
 package main
 
 import (
-	"github.com/JLaferri/arith-func-parser/arithfunc"
 	"fmt"
+	"github.com/JLaferri/arith-func-parser/arithfunc"
 )
 
 func main() {
-	f, err := Parse("5 - V0 / V0 + V1^(1/2)")
+	f, err := arithfunc.Parse("5 - V0 / V0 + V1^(1/2)")
 	if err != nil {
-	  panic()
+		panic("Encountered error trying to parse string.")
 	}
 
 	result, err := f(1, 4)
 	if err != nil {
-	  panic()
+		panic("Encountered error trying to execute fucntion.")
 	}
-	
+
 	fmt.Println(result)
 }
 ```
