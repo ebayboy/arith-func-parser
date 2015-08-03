@@ -1,3 +1,4 @@
+//Package arithfunc provides a function for converting a string based arithmetic function to a func variable.
 package arithfunc
 
 import (

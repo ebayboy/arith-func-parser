@@ -47,7 +47,6 @@ func testParseHelper(t *testing.T, answer float64, fStr string, vl ...float64) {
 func TestParseErrors(t *testing.T) {
 	testParseErrorsHelper(t, "V0 / (V0 + V1")
 	testParseErrorsHelper(t, "A0 / 1")
-	testParseErrorsHelper(t, "-5 + 5")
 	testParseErrorsHelper(t, "()())((()))))))")
 }
 
