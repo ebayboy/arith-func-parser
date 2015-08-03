@@ -19,6 +19,8 @@ func TestParse(t *testing.T) {
 	testParseHelper(t, 16, "(V0 * 4)^2", inputs...)
 	testParseHelper(t, 9, "6 * 1 / 2 * 3")
 	testParseHelper(t, -12, "1 + 2 / 4 * 5 + 1 / 2 - (7 / 2 * 2 + 9)")
+	testParseHelper(t, 10, "5 - (-5 - -5) + V0", 5)
+	testParseHelper(t, 10, "5--5")
 	testParseHelper(t, math.Inf(0), "1 / 0")
 	testParseHelper(t, math.Inf(-1), "(0 - 1) / 0")
 }
@@ -48,6 +50,10 @@ func TestParseErrors(t *testing.T) {
 	testParseErrorsHelper(t, "V0 / (V0 + V1")
 	testParseErrorsHelper(t, "A0 / 1")
 	testParseErrorsHelper(t, "()())((()))))))")
+	testParseErrorsHelper(t, "5--5-")
+	testParseErrorsHelper(t, "5 - *V0")
+	testParseErrorsHelper(t, "5 - *3")
+	testParseErrorsHelper(t, "5*")
 }
 
 func testParseErrorsHelper(t *testing.T, fStr string) {
