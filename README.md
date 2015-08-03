@@ -30,7 +30,7 @@ import (
 )
 
 func main() {
-	f, err := arithfunc.Parse("5 - V0 / V0 + V1^(1/2)")
+	f, err := arithfunc.Parse("-5 - V0 / V0 + V1^(1/2)")
 	if err != nil {
 		panic("Encountered error trying to parse string.")
 	}
@@ -46,6 +46,5 @@ func main() {
 
 ## Limitations
 
-- Does not currently support back to back operator symbols. In other words an input of "8 - -8" is invalid. In this case "8 - (0 - 8)" would have to be provided to achieve the expected result.
 - Does not support complex numbers.
 - The only valid operators are (+, -, *, /, and ^)
