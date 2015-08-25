@@ -66,6 +66,7 @@ func main() {
 	}
 
 	fmt.Println(result)
+	//Result should be 8
 }
 ```
 
