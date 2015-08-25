@@ -27,7 +27,7 @@ const (
 	powOp = iota
 )
 
-//Operator symbols, the order must match the operator type order
+//Operator symbols
 var operators = []byte{
 	addOp: '+',
 	subOp: '-',
@@ -50,7 +50,7 @@ const (
 	atan2Func = iota
 )
 
-//Function definitions, the order must match the function type order
+//Function definitions
 var functions = []function{
 	absFunc:   function{"abs(", 1},
 	sinFunc:   function{"sin(", 1},
@@ -343,7 +343,7 @@ func createNode(line string) *node {
 
 	//Parsing for a constant failed, either the value is a variable of the function was improperly formatted
 	//Attempt to parse for a variable
-	if len(line) < 2 || strings.ToUpper(line[:1]) != "V" {
+	if len(line) < 2 || line[:1] != "V" {
 		panic(genericError)
 	}
 

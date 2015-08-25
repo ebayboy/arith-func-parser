@@ -14,7 +14,7 @@ func TestParse(t *testing.T) {
 	testParseHelper(t, -0.5, "V0", -0.5)
 	testParseHelper(t, 0.5, "V0 / V0 + V1", inputs...)
 	testParseHelper(t, 2, "V0 / (V0 + V1)", inputs...)
-	testParseHelper(t, -1, "v0 - v0 - v0", inputs...)
+	testParseHelper(t, -1, "V0 - V0 - V0", inputs...)
 	testParseHelper(t, 4, "V0 / V1 / V1", inputs...)
 	testParseHelper(t, -2, "(0 - 1) / (V0 + V1)", inputs...)
 	testParseHelper(t, -2, "( (0 - 1) ) / (V0 + V1)", inputs...)
