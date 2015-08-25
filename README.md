@@ -20,6 +20,7 @@ Go package for parsing an arithmetic function with optional variables. Creates a
 Function  | Go Function
 ------- | -------
 abs(x)  | math.Abs(x)
+sqrt(x)	| math.Sqrt(x)
 sin(x)  | math.Sin(x)
 cos(x)  | math.Cos(x)
 tan(x)  | math.Tan(x)

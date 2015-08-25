@@ -43,6 +43,7 @@ func TestParse(t *testing.T) {
 	testParseHelper(t, math.Pi/4, "acos(cos(pi/4))")
 	testParseHelper(t, math.Pi/4, "atan(tan(pi/4))")
 	testParseHelper(t, -math.Pi/4, "atan2(-1, 1)")
+	testParseHelper(t, 2, "sqrt(4)")
 }
 
 func testParseHelper(t *testing.T, answer float64, fStr string, vl ...float64) {

@@ -39,6 +39,7 @@ var operators = []byte{
 //Function types
 const (
 	absFunc   = iota
+	sqrtFunc  = iota
 	sinFunc   = iota
 	cosFunc   = iota
 	tanFunc   = iota
@@ -53,6 +54,7 @@ const (
 //Function definitions
 var functions = []function{
 	absFunc:   function{"abs(", 1},
+	sqrtFunc:  function{"sqrt(", 1},
 	sinFunc:   function{"sin(", 1},
 	cosFunc:   function{"cos(", 1},
 	tanFunc:   function{"tan(", 1},
@@ -149,6 +151,8 @@ func traverseAndCalc(n *node, vl ...float64) float64 {
 		switch n.functionType {
 		case absFunc:
 			return math.Abs(traverseAndCalc(n.children[0], vl...))
+		case sqrtFunc:
+			return math.Sqrt(traverseAndCalc(n.children[0], vl...))
 		case sinFunc:
 			return math.Sin(traverseAndCalc(n.children[0], vl...))
 		case cosFunc:
