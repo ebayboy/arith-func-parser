@@ -10,19 +10,71 @@ import (
 	"strings"
 )
 
+//Node types
 const (
 	operatorNode = iota
 	variableNode = iota
 	constantNode = iota
+	functionNode = iota
 )
+
+//Operator types
+const (
+	addOp = iota
+	subOp = iota
+	mulOp = iota
+	divOp = iota
+	powOp = iota
+)
+
+//Operator symbols, the order must match the operator type order
+var operators = []byte{
+	addOp: '+',
+	subOp: '-',
+	mulOp: '*',
+	divOp: '/',
+	powOp: '^',
+}
+
+//Function types
+const (
+	absFunc  = iota
+	sinFunc  = iota
+	cosFunc  = iota
+	tanFunc  = iota
+	lnFunc   = iota
+	logFunc  = iota
+	asinFunc = iota
+	acosFunc = iota
+	atanFunc = iota
+)
+
+//Function definitions, the order must match the function type order
+var functions = []string{
+	absFunc:  "abs(",
+	sinFunc:  "sin(",
+	cosFunc:  "cos(",
+	tanFunc:  "tan(",
+	lnFunc:   "ln(",
+	logFunc:  "log(",
+	asinFunc: "asin(",
+	acosFunc: "acos(",
+	atanFunc: "atan(",
+}
+
+//Pre-defined constants
+var constantMap = map[string]float64{
+	"e":   math.E,
+	"pi":  math.Pi,
+	"phi": math.Phi,
+}
 
 //Struct containing a node which can contain either an operator, a variable, or a constant
 type node struct {
-	left  *node
-	right *node
-	value string
-
-	nodeType      int
+	nodeType      int //Defines node type
+	children      []*node
+	operatorType  int
+	functionType  int
 	constantValue float64
 	variableIndex int
 }
@@ -72,17 +124,39 @@ func traverseAndCalc(n *node, vl ...float64) float64 {
 	switch n.nodeType {
 	case operatorNode:
 		//If operator, recursively calculate children and execute operation
-		switch n.value {
-		case "+":
-			return traverseAndCalc(n.left, vl...) + traverseAndCalc(n.right, vl...)
-		case "-":
-			return traverseAndCalc(n.left, vl...) - traverseAndCalc(n.right, vl...)
-		case "*":
-			return traverseAndCalc(n.left, vl...) * traverseAndCalc(n.right, vl...)
-		case "/":
-			return traverseAndCalc(n.left, vl...) / traverseAndCalc(n.right, vl...)
-		case "^":
-			return math.Pow(traverseAndCalc(n.left, vl...), traverseAndCalc(n.right, vl...))
+		switch n.operatorType {
+		case addOp:
+			return traverseAndCalc(n.children[0], vl...) + traverseAndCalc(n.children[1], vl...)
+		case subOp:
+			return traverseAndCalc(n.children[0], vl...) - traverseAndCalc(n.children[1], vl...)
+		case mulOp:
+			return traverseAndCalc(n.children[0], vl...) * traverseAndCalc(n.children[1], vl...)
+		case divOp:
+			return traverseAndCalc(n.children[0], vl...) / traverseAndCalc(n.children[1], vl...)
+		case powOp:
+			return math.Pow(traverseAndCalc(n.children[0], vl...), traverseAndCalc(n.children[1], vl...))
+		}
+	case functionNode:
+		//If function, execute function on inner right tree
+		switch n.functionType {
+		case absFunc:
+			return math.Abs(traverseAndCalc(n.children[0], vl...))
+		case sinFunc:
+			return math.Sin(traverseAndCalc(n.children[0], vl...))
+		case cosFunc:
+			return math.Cos(traverseAndCalc(n.children[0], vl...))
+		case tanFunc:
+			return math.Tan(traverseAndCalc(n.children[0], vl...))
+		case lnFunc:
+			return math.Log(traverseAndCalc(n.children[0], vl...))
+		case logFunc:
+			return math.Log10(traverseAndCalc(n.children[0], vl...))
+		case asinFunc:
+			return math.Asin(traverseAndCalc(n.children[0], vl...))
+		case acosFunc:
+			return math.Acos(traverseAndCalc(n.children[0], vl...))
+		case atanFunc:
+			return math.Atan(traverseAndCalc(n.children[0], vl...))
 		}
 	case constantNode:
 		return n.constantValue
@@ -125,8 +199,6 @@ func isSurroundedByMatchingParentheses(line string) bool {
 	return true
 }
 
-var operators = []byte{'+', '-', '*', '/', '^'}
-
 //Creates a node from the given string
 func createNode(line string) *node {
 	//Trim white space if there is any
@@ -139,7 +211,7 @@ func createNode(line string) *node {
 
 	//Iterate through characters looking for operation characters with respect to order of operations.
 	//Anything in parentheses is ignored as it will be handled later
-	for _, operator := range operators {
+	for k, operator := range operators {
 		parenthCount := 0
 
 		//Iterate through string backwards to preserve left to right operation
@@ -166,12 +238,12 @@ func createNode(line string) *node {
 					case '/':
 						fallthrough
 					case '^':
-						i = i2 //Reposition i and break out of for loop
+						i = i2 //Reposition i to this operator and break out of for loop
 						break charLoop
 					case ' ':
 						//Do nothing - keep checking
 					default:
-						break charLoop
+						break charLoop //if any value that isn't an operator or space is detected, the last operator has been found
 					}
 				}
 
@@ -185,33 +257,53 @@ func createNode(line string) *node {
 				}
 
 				return &node{
-					value:    string(value),
-					nodeType: operatorNode,
-					left:     left,
-					right:    right,
+					nodeType:     operatorNode,
+					operatorType: k,
+					children:     []*node{left, right},
 				}
 			}
 		}
 	}
 
-	//If no operators have been found, the remaining value represents either a variable, a constant, or following a negation operator
+	//If no operators have been found, the remaining value represents either a variable, a constant, a function, or following a negation operator
 	//Return nil node if line is empty, this is only valid in the case of a negation operation, will cause a fault for everything else
 	if len(line) == 0 {
 		return nil
 	}
 
-	//Attempt to parse for a constant second
+	//Attempt to parse for a numerical constant second. Check for e prevents values defined in scientific notation such as 1e5 to go through without error.
+	//This behavior is enforced because 1e-5 would throw an error anyway due to the negative sign.
 	num, err := strconv.ParseFloat(line, 64)
-	if err == nil {
+	if err == nil && !strings.ContainsAny(line, "eE") {
 		//Parsing constant succeeded, create and return constant node
 		return &node{
-			value:         line,
 			nodeType:      constantNode,
 			constantValue: num,
 		}
 	}
 
-	//Attempt to parse for a variable third
+	//Check if value is a valid pre-defined constant third
+	num, ok := constantMap[line]
+	if ok {
+		//Fetching constant succeeded, create and return constant node
+		return &node{
+			nodeType:      constantNode,
+			constantValue: num,
+		}
+	}
+
+	//Check if line contains a valid function fourth
+	for k, v := range functions {
+		if strings.HasPrefix(line, v) {
+			return &node{
+				nodeType:     functionNode,
+				functionType: k,
+				children:     []*node{createNode(line[len(v) : len(line)-1])},
+			}
+		}
+	}
+
+	//Attempt to parse for a variable last
 	recoverableError := errors.New("The function defined by the string is improperly formatted. Only variables of the form V# (V0 for variable 0) are allowed. " +
 		"Negative constants cannot be defined as this will get confused with the subtract operator, define these as (0 - 5) for -5. " +
 		"Ensure all parentheses are matching pairs.")
@@ -230,7 +322,6 @@ func createNode(line string) *node {
 
 	//Variable parse worked
 	return &node{
-		value:         line,
 		nodeType:      variableNode,
 		variableIndex: int(varIdx),
 	}
