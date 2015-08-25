@@ -12,6 +12,31 @@ Go package for parsing an arithmetic function with optional variables. Creates a
 
 - Pass arithmetic function as string and return func variable that can be executed to obtain the result.
 - Supports any number of variables in the function definition which can then be evaluated using values passed to the returned function.
+- Supports function computations such as abs, sin, log, etc.
+- Supports some built in constants such as pi and e.
+
+## Supported Functions
+
+Function  | Go Function
+------- | -------
+abs(x)  | math.Abs(x)
+sin(x)  | math.Sin(x)
+cos(x)  | math.Cos(x)
+tan(x)  | math.Tan(x)
+ln(x)	| math.Log(x)
+log(x)	| math.Log10(x)
+asin(x)	| math.Asin(x)
+acos(x)	| math.Acos(x)
+atan(x)	| math.Atan(x)
+atan2(y, x) | math.Atan2(y, x)
+
+## Supported Constants
+
+Constant | Value
+-------- | -------
+e	| math.E
+pi	| math.Pi
+phi	| math.Phi
 
 ## Install
 
