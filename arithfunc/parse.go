@@ -302,6 +302,19 @@ func createNode(line string) *node {
 		}
 	}
 
+	//Attempt to parse for a variable
+	if len(line) > 1 && strings.HasPrefix(line, "V") {
+		//Parse for variable index
+		varIdx, err := strconv.ParseUint(line[1:], 10, 32)
+		if err == nil {
+			//Variable parse worked
+			return &node{
+				nodeType:      variableNode,
+				variableIndex: int(varIdx),
+			}
+		}
+	}
+
 	//Check if line contains a valid function
 	for k, v := range functions {
 		if strings.HasPrefix(line, v.code) {
@@ -336,26 +349,8 @@ func createNode(line string) *node {
 		}
 	}
 
-	//Attempt to parse for a variable last
-	genericError := errors.New("The function defined by the string is improperly formatted. Only variables of the form V# (V0 for variable 0) are allowed. " +
-		"Negative constants cannot be defined as this will get confused with the subtract operator, define these as (0 - 5) for -5. " +
-		"Ensure all parentheses are matching pairs. Ensure if you are calling functions that those functions exist.")
-
-	//Parsing for a constant failed, either the value is a variable of the function was improperly formatted
-	//Attempt to parse for a variable
-	if len(line) < 2 || line[:1] != "V" {
-		panic(genericError)
-	}
-
-	//Parse for variable index
-	varIdx, err := strconv.ParseUint(line[1:], 10, 32)
-	if err != nil {
-		panic(genericError)
-	}
-
-	//Variable parse worked
-	return &node{
-		nodeType:      variableNode,
-		variableIndex: int(varIdx),
-	}
+	//Failed to detect valid constant, function, or variable, return a generic format issue error
+	panic(errors.New(fmt.Sprintf("The function defined by the input string is improperly formatted. Only variables of the form V# (V0 for variable 0) are allowed. "+
+		"Ensure all parentheses are matching pairs. Ensure if you are calling functions that those functions exist. It is possible, but not guaranteed "+
+		"that the error is contained in the section: %s.", line)))
 }

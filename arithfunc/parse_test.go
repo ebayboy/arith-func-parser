@@ -103,8 +103,8 @@ func testParseErrorsHelper(t *testing.T, fStr string) {
 		return
 	}
 
-	//If error is returned, that is a pass
-	// fmt.Printf("Success! %s produced error: %s\r\n", fStr, err.Error())
+	//	//If error is returned, that is a pass
+	//	fmt.Printf("Success! %s produced error: %s\r\n", fStr, err.Error())
 }
 
 func TestExecutionErrors(t *testing.T) {
