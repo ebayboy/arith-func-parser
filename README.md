@@ -55,7 +55,7 @@ import (
 )
 
 func main() {
-	f, err := arithfunc.Parse("-5 - V0 / V0 + V1^(1/2)")
+	f, err := arithfunc.Parse("abs(-5 - V0) / V0 + V1^(1/2)")
 	if err != nil {
 		panic("Encountered error trying to parse string.")
 	}
