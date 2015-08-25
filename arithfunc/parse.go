@@ -38,28 +38,30 @@ var operators = []byte{
 
 //Function types
 const (
-	absFunc  = iota
-	sinFunc  = iota
-	cosFunc  = iota
-	tanFunc  = iota
-	lnFunc   = iota
-	logFunc  = iota
-	asinFunc = iota
-	acosFunc = iota
-	atanFunc = iota
+	absFunc   = iota
+	sinFunc   = iota
+	cosFunc   = iota
+	tanFunc   = iota
+	lnFunc    = iota
+	logFunc   = iota
+	asinFunc  = iota
+	acosFunc  = iota
+	atanFunc  = iota
+	atan2Func = iota
 )
 
 //Function definitions, the order must match the function type order
-var functions = []string{
-	absFunc:  "abs(",
-	sinFunc:  "sin(",
-	cosFunc:  "cos(",
-	tanFunc:  "tan(",
-	lnFunc:   "ln(",
-	logFunc:  "log(",
-	asinFunc: "asin(",
-	acosFunc: "acos(",
-	atanFunc: "atan(",
+var functions = []function{
+	absFunc:   function{"abs(", 1},
+	sinFunc:   function{"sin(", 1},
+	cosFunc:   function{"cos(", 1},
+	tanFunc:   function{"tan(", 1},
+	lnFunc:    function{"ln(", 1},
+	logFunc:   function{"log(", 1},
+	asinFunc:  function{"asin(", 1},
+	acosFunc:  function{"acos(", 1},
+	atanFunc:  function{"atan(", 1},
+	atan2Func: function{"atan2(", 2},
 }
 
 //Pre-defined constants
@@ -77,6 +79,12 @@ type node struct {
 	functionType  int
 	constantValue float64
 	variableIndex int
+}
+
+//Struct defining a function
+type function struct {
+	code           string
+	parameterCount int
 }
 
 //Parse takes in a string denoting an arithmetic function with optional variable values formatted as V0, V1, etc.
@@ -157,6 +165,8 @@ func traverseAndCalc(n *node, vl ...float64) float64 {
 			return math.Acos(traverseAndCalc(n.children[0], vl...))
 		case atanFunc:
 			return math.Atan(traverseAndCalc(n.children[0], vl...))
+		case atan2Func:
+			return math.Atan2(traverseAndCalc(n.children[0], vl...), traverseAndCalc(n.children[1], vl...))
 		}
 	case constantNode:
 		return n.constantValue
@@ -271,7 +281,7 @@ func createNode(line string) *node {
 		return nil
 	}
 
-	//Attempt to parse for a numerical constant second. Check for e prevents values defined in scientific notation such as 1e5 to go through without error.
+	//Attempt to parse for a numerical constant. Check for e prevents values defined in scientific notation such as 1e5 to go through without error.
 	//This behavior is enforced because 1e-5 would throw an error anyway due to the negative sign.
 	num, err := strconv.ParseFloat(line, 64)
 	if err == nil && !strings.ContainsAny(line, "eE") {
@@ -282,7 +292,7 @@ func createNode(line string) *node {
 		}
 	}
 
-	//Check if value is a valid pre-defined constant third
+	//Check if value is a valid pre-defined constant
 	num, ok := constantMap[line]
 	if ok {
 		//Fetching constant succeeded, create and return constant node
@@ -292,32 +302,55 @@ func createNode(line string) *node {
 		}
 	}
 
-	//Check if line contains a valid function fourth
+	//Check if line contains a valid function
 	for k, v := range functions {
-		if strings.HasPrefix(line, v) {
+		if strings.HasPrefix(line, v.code) {
+			if !strings.HasSuffix(line, ")") {
+				panic(errors.New(fmt.Sprintf("The function definition %s is lacking a closing parenthesis.", line)))
+			}
+
+			arguments := strings.Split(line[len(v.code):len(line)-1], ",")
+
+			//Check if argument count is valid
+			if len(arguments) != v.parameterCount {
+				panic(errors.New(fmt.Sprintf("The function definition %s contains an incorrect number of arguments. Expected %v argument(s) but received %v.", line, v.parameterCount, len(arguments))))
+			}
+
+			childen := make([]*node, len(arguments))
+			for i, arg := range arguments {
+				//Generate child node for this argument
+				childen[i] = createNode(arg)
+
+				//Check to make sure none of the arguments passed are empty
+				if childen[i] == nil {
+					panic(errors.New(fmt.Sprintf("The function definition %s contains an empty argument. The offending argument index is %v.", line, i)))
+				}
+			}
+
+			//Return function node
 			return &node{
 				nodeType:     functionNode,
 				functionType: k,
-				children:     []*node{createNode(line[len(v) : len(line)-1])},
+				children:     childen,
 			}
 		}
 	}
 
 	//Attempt to parse for a variable last
-	recoverableError := errors.New("The function defined by the string is improperly formatted. Only variables of the form V# (V0 for variable 0) are allowed. " +
+	genericError := errors.New("The function defined by the string is improperly formatted. Only variables of the form V# (V0 for variable 0) are allowed. " +
 		"Negative constants cannot be defined as this will get confused with the subtract operator, define these as (0 - 5) for -5. " +
-		"Ensure all parentheses are matching pairs.")
+		"Ensure all parentheses are matching pairs. Ensure if you are calling functions that those functions exist.")
 
 	//Parsing for a constant failed, either the value is a variable of the function was improperly formatted
 	//Attempt to parse for a variable
 	if len(line) < 2 || strings.ToUpper(line[:1]) != "V" {
-		panic(recoverableError)
+		panic(genericError)
 	}
 
 	//Parse for variable index
 	varIdx, err := strconv.ParseUint(line[1:], 10, 32)
 	if err != nil {
-		panic(recoverableError)
+		panic(genericError)
 	}
 
 	//Variable parse worked

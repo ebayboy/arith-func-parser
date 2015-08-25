@@ -42,6 +42,7 @@ func TestParse(t *testing.T) {
 	testParseHelper(t, math.Pi/4, "asin(sin(pi/4))")
 	testParseHelper(t, math.Pi/4, "acos(cos(pi/4))")
 	testParseHelper(t, math.Pi/4, "atan(tan(pi/4))")
+	testParseHelper(t, -math.Pi/4, "atan2(-1, 1)")
 }
 
 func testParseHelper(t *testing.T, answer float64, fStr string, vl ...float64) {
@@ -86,6 +87,12 @@ func TestParseErrors(t *testing.T) {
 	testParseErrorsHelper(t, "1e-5")
 	testParseErrorsHelper(t, "1E5")
 	testParseErrorsHelper(t, "1E-5")
+	testParseErrorsHelper(t, "sin()")
+	testParseErrorsHelper(t, "abs()")
+	testParseErrorsHelper(t, "abs(5")
+	testParseErrorsHelper(t, "abs(")
+	testParseErrorsHelper(t, "abs(5, 7)")
+	testParseErrorsHelper(t, "atan2(1)")
 }
 
 func testParseErrorsHelper(t *testing.T, fStr string) {
