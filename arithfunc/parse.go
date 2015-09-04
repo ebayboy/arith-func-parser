@@ -53,17 +53,17 @@ const (
 
 //Function definitions
 var functions = []function{
-	absFunc:   function{"abs(", 1},
-	sqrtFunc:  function{"sqrt(", 1},
-	sinFunc:   function{"sin(", 1},
-	cosFunc:   function{"cos(", 1},
-	tanFunc:   function{"tan(", 1},
-	lnFunc:    function{"ln(", 1},
-	logFunc:   function{"log(", 1},
-	asinFunc:  function{"asin(", 1},
-	acosFunc:  function{"acos(", 1},
-	atanFunc:  function{"atan(", 1},
-	atan2Func: function{"atan2(", 2},
+	absFunc:   function{"abs", 1, nil},
+	sqrtFunc:  function{"sqrt", 1, nil},
+	sinFunc:   function{"sin", 1, nil},
+	cosFunc:   function{"cos", 1, nil},
+	tanFunc:   function{"tan", 1, nil},
+	lnFunc:    function{"ln", 1, nil},
+	logFunc:   function{"log", 1, nil},
+	asinFunc:  function{"asin", 1, nil},
+	acosFunc:  function{"acos", 1, nil},
+	atanFunc:  function{"atan", 1, nil},
+	atan2Func: function{"atan2", 2, nil},
 }
 
 //Pre-defined constants
@@ -87,6 +87,18 @@ type node struct {
 type function struct {
 	code           string
 	parameterCount int
+	execute        func(vars ...float64) float64
+}
+
+//RegisterFunction allows for the addition of custom functions to be added to the expression tree
+func RegisterFunction(code string, parameterCount int, functionDefinition func(vars ...float64) float64) {
+	//If function is not defined, do not add new function
+	if functionDefinition == nil {
+		return
+	}
+
+	newFunction := function{code, parameterCount, functionDefinition}
+	functions = append(functions, newFunction)
 }
 
 //Parse takes in a string denoting an arithmetic function with optional variable values formatted as V0, V1, etc.
@@ -103,10 +115,15 @@ func Parse(s string) (result func(vl ...float64) (float64, error), err error) {
 		}
 	}()
 
+	//	fmt.Printf("input: %s\r\n", s)
+
 	root := createNode(s)
 	if root == nil {
 		return nil, errors.New("Input function string is empty.")
 	}
+
+	//Optimize tree for faster calculation
+	optimize(root)
 
 	return func(vl ...float64) (value float64, err error) {
 		//Set up recovery handling on recursive function call
@@ -119,6 +136,7 @@ func Parse(s string) (result func(vl ...float64) (float64, error), err error) {
 			}
 		}()
 
+		//		fmt.Printf("calculating...\r\n")
 		//Create var map to map variable values to corresponding string values that were originally passed to parse function
 		return traverseAndCalc(root, vl...), nil
 	}, nil
@@ -133,6 +151,7 @@ func traverseAndCalc(n *node, vl ...float64) float64 {
 	//Check node type
 	switch n.nodeType {
 	case operatorNode:
+		//		fmt.Printf("operator node: %c\r\n", operators[n.operatorType])
 		//If operator, recursively calculate children and execute operation
 		switch n.operatorType {
 		case addOp:
@@ -147,6 +166,7 @@ func traverseAndCalc(n *node, vl ...float64) float64 {
 			return math.Pow(traverseAndCalc(n.children[0], vl...), traverseAndCalc(n.children[1], vl...))
 		}
 	case functionNode:
+		//		fmt.Printf("function node: %s\r\n", functions[n.functionType].code)
 		//If function, execute function on inner right tree
 		switch n.functionType {
 		case absFunc:
@@ -171,10 +191,19 @@ func traverseAndCalc(n *node, vl ...float64) float64 {
 			return math.Atan(traverseAndCalc(n.children[0], vl...))
 		case atan2Func:
 			return math.Atan2(traverseAndCalc(n.children[0], vl...), traverseAndCalc(n.children[1], vl...))
+		default:
+			fnc := functions[n.functionType]
+			fncVars := make([]float64, fnc.parameterCount)
+			for i := 0; i < fnc.parameterCount; i++ {
+				fncVars[i] = traverseAndCalc(n.children[i], vl...)
+			}
+			return functions[n.functionType].execute(fncVars...)
 		}
 	case constantNode:
+		//		fmt.Printf("constant node:. %f\r\n", n.constantValue)
 		return n.constantValue
 	case variableNode:
+		//		fmt.Printf("variable node: V%d\r\n", n.variableIndex)
 		if n.variableIndex >= len(vl) {
 			panic(errors.New(fmt.Sprintf("Variable with index %d is required. Not enough input variables were provided in function call.", n.variableIndex)))
 		}
@@ -321,12 +350,12 @@ func createNode(line string) *node {
 
 	//Check if line contains a valid function
 	for k, v := range functions {
-		if strings.HasPrefix(line, v.code) {
+		if strings.HasPrefix(line, v.code+"(") {
 			if !strings.HasSuffix(line, ")") {
 				panic(errors.New(fmt.Sprintf("The function definition %s is lacking a closing parenthesis.", line)))
 			}
 
-			arguments := strings.Split(line[len(v.code):len(line)-1], ",")
+			arguments := strings.Split(line[len(v.code)+1:len(line)-1], ",")
 
 			//Check if argument count is valid
 			if len(arguments) != v.parameterCount {
@@ -357,4 +386,39 @@ func createNode(line string) *node {
 	panic(errors.New(fmt.Sprintf("The function defined by the input string is improperly formatted. Only variables of the form V# (V0 for variable 0) are allowed. "+
 		"Ensure all parentheses are matching pairs. Ensure if you are calling functions that those functions exist. It is possible, but not guaranteed "+
 		"that the error is contained in the section: %s.", line)))
+}
+
+//This function optimizes the node such that it will calculate faster
+func optimize(n *node) {
+	calculateConstants(n)
+}
+
+func calculateConstants(n *node) bool {
+	if n == nil || n.nodeType == constantNode {
+		return true
+	}
+
+	//If this node is a variable, pass up a false
+	if n.nodeType == variableNode {
+		return false
+	}
+
+	//Check all children to scan for any variables
+	allConstants := true
+	for _, v := range n.children {
+		childrenAllConstants := calculateConstants(v)
+		allConstants = allConstants && childrenAllConstants
+	}
+
+	//fmt.Printf("%v, %v\r\n", n, allConstants)
+
+	//If no children are variables, calculate this node
+	if allConstants {
+		*n = node{
+			nodeType:      constantNode,
+			constantValue: traverseAndCalc(n),
+		}
+	}
+
+	return allConstants
 }

@@ -5,9 +5,17 @@ import (
 	"testing"
 )
 
+func init() {
+	RegisterFunction("sum3", 3, func(vars ...float64) float64 {
+		return vars[0] + vars[1] + vars[2]
+	})
+}
+
 func TestParse(t *testing.T) {
 	inputs := []float64{1, -0.5}
 
+	testParseHelper(t, 2, "(V0 * 4)^(1/2)", inputs...)
+	testParseHelper(t, 1, " ( V0 - -(sin(pi/2))   + -abs(cos(pi)))", 1)
 	testParseHelper(t, 5, "5")
 	testParseHelper(t, 36, "36")
 	testParseHelper(t, 1.5, "1.5")
@@ -19,7 +27,6 @@ func TestParse(t *testing.T) {
 	testParseHelper(t, -2, "(0 - 1) / (V0 + V1)", inputs...)
 	testParseHelper(t, -2, "( (0 - 1) ) / (V0 + V1)", inputs...)
 	testParseHelper(t, 4, "(((V0001 - V00)/1.5) + 5)", inputs...)
-	testParseHelper(t, 2, "(V0 * 4)^(1/2)", inputs...)
 	testParseHelper(t, 16, "(V0 * 4)^2", inputs...)
 	testParseHelper(t, 9, "6 * 1 / 2 * 3")
 	testParseHelper(t, -12, "1 + 2 / 4 * 5 + 1 / 2 - (7 / 2 * 2 + 9)")
@@ -35,7 +42,6 @@ func TestParse(t *testing.T) {
 	testParseHelper(t, 0, "cos(pi/2)")
 	testParseHelper(t, 0, "sin(0)")
 	testParseHelper(t, 1, "sin(pi/2)")
-	testParseHelper(t, 1, " ( V0 - -(sin(pi/2))   + -abs(cos(pi)))", 1)
 	testParseHelper(t, 5, "log(10^5)")
 	testParseHelper(t, 5, "ln(e^5)")
 	testParseHelper(t, 1e-5, "10^(-5)")
@@ -44,6 +50,7 @@ func TestParse(t *testing.T) {
 	testParseHelper(t, math.Pi/4, "atan(tan(pi/4))")
 	testParseHelper(t, -math.Pi/4, "atan2(-1, 1)")
 	testParseHelper(t, 2, "sqrt(4)")
+	testParseHelper(t, 10, "sum3(10/5, 3, 2.5 * 2)") //test parsing a custom function
 }
 
 func testParseHelper(t *testing.T, answer float64, fStr string, vl ...float64) {
@@ -92,8 +99,11 @@ func TestParseErrors(t *testing.T) {
 	testParseErrorsHelper(t, "abs()")
 	testParseErrorsHelper(t, "abs(5")
 	testParseErrorsHelper(t, "abs(")
+	testParseErrorsHelper(t, "abs((5/2.5)")
 	testParseErrorsHelper(t, "abs(5, 7)")
 	testParseErrorsHelper(t, "atan2(1)")
+	testParseErrorsHelper(t, "fake(1, 2, 3)")
+	testParseErrorsHelper(t, "sum3(1,2,3,4)") //sum3 was registered before, test to make sure it errors out on providing the wrong number of variables
 }
 
 func testParseErrorsHelper(t *testing.T, fStr string) {
