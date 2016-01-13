@@ -142,6 +142,36 @@ func Parse(s string) (result func(vl ...float64) (float64, error), err error) {
 	}, nil
 }
 
+//ParseUnsafe works exactly the same as Parse except that the returned function does not handle the recursive panic
+func ParseUnsafe(s string) (result func(vl ...float64) float64, err error) {
+	//Because the called functions are recursive, in order to return an error the function will panic internally
+	//the panic will be recovered here and returned as an error
+	defer func() {
+		if r := recover(); r != nil {
+			if _, ok := r.(runtime.Error); ok {
+				panic(r)
+			}
+			err = r.(error)
+		}
+	}()
+
+	//	fmt.Printf("input: %s\r\n", s)
+
+	root := createNode(s)
+	if root == nil {
+		return nil, errors.New("Input function string is empty.")
+	}
+
+	//Optimize tree for faster calculation
+	optimize(root)
+
+	return func(vl ...float64) float64 {
+		//		fmt.Printf("calculating...\r\n")
+		//Create var map to map variable values to corresponding string values that were originally passed to parse function
+		return traverseAndCalc(root, vl...)
+	}, nil
+}
+
 func traverseAndCalc(n *node, vl ...float64) float64 {
 	//If node is nil, return zero. This will properly execute a negation
 	if n == nil {
