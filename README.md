@@ -63,7 +63,7 @@ func main() {
 
 	result, err := f(1, 4)
 	if err != nil {
-		panic("Encountered error trying to execute fucntion.")
+		panic("Encountered error trying to execute function.")
 	}
 
 	fmt.Println(result)
